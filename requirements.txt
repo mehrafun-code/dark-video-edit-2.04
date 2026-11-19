@@ -1,0 +1,4 @@
+pywebview>=5.0
+numpy
+yt-dlp[default]
+imageio-ffmpeg
