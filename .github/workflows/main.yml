@@ -1,0 +1,34 @@
+name: Build Windows app 2.04
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      debug:
+        description: "Debug build (opens a console window that shows errors)"
+        type: boolean
+        default: false
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install Python packages
+        run: pip install -r requirements.txt pyinstaller
+      - name: Download Deno (YouTube downloads need a JavaScript runtime)
+        shell: pwsh
+        run: |
+          Invoke-WebRequest https://github.com/denoland/deno/releases/latest/download/deno-x86_64-pc-windows-msvc.zip -OutFile deno.zip
+          Expand-Archive deno.zip -DestinationPath app/bin
+      - name: Build app
+        run: >
+          pyinstaller --noconfirm ${{ inputs.debug && '--console' || '--windowed' }} --name DarkVideoEdit --icon app/assets/icon.ico
+          --add-data "app/ui;ui" --add-data "app/assets;assets" --add-binary "app/bin/deno.exe;bin"
+          --collect-all webview --collect-all imageio_ffmpeg --collect-all yt_dlp --collect-all yt_dlp_ejs app/main.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: "${{ inputs.debug && 'DarkVideoEdit-2.04-debug' || 'DarkVideoEdit-2.04-windows' }}"
+          path: dist/DarkVideoEdit
